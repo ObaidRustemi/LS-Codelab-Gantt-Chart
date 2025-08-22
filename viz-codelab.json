@@ -1,0 +1,16 @@
+{
+  "data": {
+    "tables": [
+      {
+        "id": "default",
+        "label": "Tasks",
+        "columns": [
+          { "id": "task", "label": "Task", "type": "TEXT" },
+          { "id": "start", "label": "Start", "type": "YEAR_MONTH_DAY" },
+          { "id": "end", "label": "End", "type": "YEAR_MONTH_DAY" }
+        ]
+      }
+    ]
+  },
+  "style": {}
+}

@@ -1,0 +1,17 @@
+{
+  "name": "LS Codelab Gantt Chart",
+  "logoUrl": "",
+  "organization": "LS Codelab",
+  "description": "Gantt chart prototype as a Looker Studio community visualization.",
+  "supportUrl": "",
+  "privacyPolicyUrl": "",
+  "resources": {
+    "js": [
+      "viz-codelab.js"
+    ],
+    "css": [
+      "viz-codelab.css"
+    ],
+    "config": "viz-codelab.json"
+  }
+}
