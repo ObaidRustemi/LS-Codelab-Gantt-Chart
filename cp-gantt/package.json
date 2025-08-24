@@ -1,0 +1,19 @@
+{
+  "name": "cp-gantt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "LOCAL=true node scripts/dev-server.js",
+    "update_message": "cp sample-data/localData.js sample-data/localData.js",
+    "build:dev": "node scripts/build-dev.js",
+    "build:prod": "node scripts/build-prod.js",
+    "push:dev": "echo 'Set GS_BUCKET env var to your bucket' && gsutil cp -a public-read manifest.json config.json dist/viz.js styles.css gs://$GS_BUCKET/cp-gantt/dev/",
+    "push:prod": "echo 'Set GS_BUCKET env var to your bucket' && gsutil cp -a public-read manifest.prod.json config.json dist/viz.js styles.css gs://$GS_BUCKET/cp-gantt/prod/"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5",
+    "chokidar": "3.6.0",
+    "sirv": "2.0.4"
+  }
+}

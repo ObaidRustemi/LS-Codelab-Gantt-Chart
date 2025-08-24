@@ -1,0 +1,13 @@
+{
+  "name": "CP Gantt",
+  "organization": "Uber Rider/TX",
+  "description": "Gantt-style milestone visualization (CP3–CP5) with Today marker and filtering.",
+  "logoUrl": "https://dummyimage.com/96x96/000/fff.png&text=G",
+  "organizationUrl": "https://www.uber.com",
+  "supportUrl": "https://www.uber.com",
+  "privacyPolicyUrl": "https://www.uber.com",
+  "resources": { "js": ["dist/viz.js"] },
+  "style": ["styles.css"],
+  "config": "config.json",
+  "devMode": true
+}
