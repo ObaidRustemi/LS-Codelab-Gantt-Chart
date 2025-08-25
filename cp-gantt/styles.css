@@ -1,4 +1,4 @@
-:root { --bg: #0b0f17; --panel: #121826; --text: #e6edf3; --grid: #202938; }
+:root { --bg: #0b0f17; --panel: #121826; --text: #e6edf3; --grid: #363E4C; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial; }
 #container { width: 100%; height: 100%; }
 svg { display: block; width: 100%; height: 100%; }
@@ -8,8 +8,8 @@ svg { display: block; width: 100%; height: 100%; }
 .header { font-weight: 600; font-size: 14px; fill: #a6b2c5; }
 .month-title { font-weight: 700; font-size: 16px; fill: #d7deea; }
 .week-label { font-size: 12px; fill: #909bb0; }
-.today-line { stroke-dasharray: 4 3; }
-.month-end-line { stroke: #6b7280; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
+.today-line { stroke: #f4d06f; stroke-dasharray: 4 3; }
+.month-end-line { stroke: #F4D06F; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
 
 .card-bg { fill: var(--panel); opacity: 0.55; }
 .card-title { fill: #e9eef7; font-size: 14px; font-weight: 600; }
