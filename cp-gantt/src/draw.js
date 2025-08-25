@@ -50,6 +50,7 @@ export function drawViz(objectData) {
 
   // Clip path to occlude bars/grid/today within the plot area (prevents bleed into left rail)
   const clipId = `plot-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const glowId = `month-glow-${Math.random().toString(36).slice(2, 8)}`;
   const defs = svg.append('defs');
   defs.append('clipPath')
     .attr('id', clipId)
@@ -59,6 +60,19 @@ export function drawViz(objectData) {
     .attr('y', 0)
     .attr('width', innerWidth)
     .attr('height', innerHeight);
+  // Subtle orange glow for month labels
+  const glow = defs.append('filter')
+    .attr('id', glowId)
+    .attr('x', '-50%')
+    .attr('y', '-50%')
+    .attr('width', '200%')
+    .attr('height', '200%');
+  glow.append('feDropShadow')
+    .attr('dx', 0)
+    .attr('dy', 0)
+    .attr('stdDeviation', 2.4)
+    .attr('flood-color', '#f59e0b')
+    .attr('flood-opacity', 0.65);
 
   // Groups for dynamic content (rendered and re-rendered on pan/zoom)
   const monthTitle = svg.append('text').attr('x', width / 2).attr('y', 26).attr('text-anchor', 'middle').attr('class', 'month-title');
@@ -413,7 +427,13 @@ export function drawViz(objectData) {
       const next = monthStarts[idx + 1];
       const x1 = next ? x(next) : x(viewState.end);
       const cx = (x0 + x1) / 2;
-      monthsG.append('text').attr('x', cx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'month-label').text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
+      monthsG.append('text')
+        .attr('x', cx)
+        .attr('y', 0)
+        .attr('text-anchor', 'middle')
+        .attr('class', 'month-label')
+        .attr('filter', `url(#${glowId})`)
+        .text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
     });
 
     // Weeks row

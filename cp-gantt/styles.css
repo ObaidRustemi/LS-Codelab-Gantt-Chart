@@ -8,7 +8,7 @@ svg { display: block; width: 100%; height: 100%; }
 .header { font-weight: 600; font-size: 14px; fill: #a6b2c5; }
 .month-title { font-weight: 700; font-size: 16px; fill: #d7deea; }
 .week-label { font-size: 12px; fill: #909bb0; }
-.month-label { font-size: 14px; font-weight: 700; fill: #f59e0b; }
+.month-label { font-size: 16px; font-weight: 800; fill: #f59e0b; letter-spacing: 0.06em; }
 .today-line { stroke: #f23a2d; stroke-dasharray: 4 3; }
 .month-end-line { stroke: #F4D06F; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
 
