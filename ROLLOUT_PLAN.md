@@ -40,6 +40,20 @@ gsutil iam ch allUsers:objectViewer gs://ls-code-lab
 
 Why: LS must fetch resources anonymously over the public internet; objectViewer makes files world-readable without exposing write access.
 
+### Preflight sanity checks (run before uploading)
+What to verify
+- Build artifacts exist and are non-empty: `dist/cp-gantt.js`, `dist/viz-cp-gantt.json`, `dist/viz-cp-gantt.css`, `dist/manifest.json`.
+- Manifest structure: has `components[0].resource.js/config` and uses gs:// paths matching the target.
+- Config structure: contains required data element IDs `team`, `projectName`, `cp3Date`, `cp35Date`, `cp4Date`, `cp5Date`.
+
+Command (from `cp-gantt/`)
+```
+npm run build:dev   # or build:prod
+npm run predeploy:check
+```
+
+Why: catches missing files, mis-wired manifest/config, and prevents broken uploads.
+
 ### Dev deploy (no manifest edits after first use)
 ```
 # Upload manifest + assets

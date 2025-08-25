@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "id": "fields",
+      "label": "Fields",
+      "elements": [
+        { "id": "team", "label": "Team", "type": "DIMENSION", "options": { "min": 1, "max": 1, "supportedTypes": ["DEFAULT"] } },
+        { "id": "projectName", "label": "Project", "type": "DIMENSION", "options": { "min": 1, "max": 1, "supportedTypes": ["DEFAULT"] } },
+        { "id": "cp3Date", "label": "CP3 Date", "type": "DIMENSION", "options": { "min": 1, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp35Date", "label": "CP3.5 Date", "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp4Date", "label": "CP4 Date", "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp5Date", "label": "CP5 Date", "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "id": "appearance",
+      "label": "Appearance",
+      "elements": [
+        { "id": "rowHeight", "label": "Row height", "type": "NUMBER", "defaultValue": 28 },
+        { "id": "showToday", "label": "Show Today line", "type": "CHECKBOX", "defaultValue": true },
+        { "id": "todayLineColor", "label": "Today line color", "type": "COLOR", "defaultValue": "#f23a2d" },
+        { "id": "todayLineWidth", "label": "Today line width", "type": "NUMBER", "defaultValue": 3 },
+        { "id": "showMilestoneTicks", "label": "Milestone ticks", "type": "CHECKBOX", "defaultValue": true }
+      ]
+    },
+    {
+      "id": "header",
+      "label": "Header & Labels",
+      "elements": [
+        { "id": "monthLabelSize", "label": "Month label size", "type": "FONT_SIZE", "defaultValue": 16 },
+        { "id": "monthLabelColor", "label": "Month label color", "type": "COLOR", "defaultValue": "#f59e0b" },
+        { "id": "monthGlow", "label": "Month label glow", "type": "CHECKBOX", "defaultValue": true }
+      ]
+    },
+    {
+      "id": "panKeyboard",
+      "label": "Panning & Keyboard",
+      "elements": [
+        { "id": "enableDrag", "label": "Enable drag panning", "type": "CHECKBOX", "defaultValue": true },
+        { "id": "enableWheel", "label": "Enable wheel panning", "type": "CHECKBOX", "defaultValue": true },
+        { "id": "keyboardAccel", "label": "Keyboard acceleration", "type": "CHECKBOX", "defaultValue": true }
+      ]
+    }
+  ],
+  "interactions": [ { "id": "onClick", "supportedActions": ["FILTER"] } ],
+  "features": { "enableComparisonDateRange": false }
+}
+

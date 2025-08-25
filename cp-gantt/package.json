@@ -8,8 +8,9 @@
     "update_message": "cp sample-data/localData.js sample-data/localData.js",
     "build:dev": "node scripts/build-dev.js",
     "build:prod": "node scripts/build-prod.js",
-    "push:dev": "echo 'Set GS_BUCKET env var to your bucket' && gsutil cp -a public-read manifest.json config.json dist/viz.js styles.css gs://$GS_BUCKET/cp-gantt/dev/",
-    "push:prod": "echo 'Set GS_BUCKET env var to your bucket' && gsutil cp -a public-read manifest.prod.json config.json dist/viz.js styles.css gs://$GS_BUCKET/cp-gantt/prod/"
+    "predeploy:check": "node scripts/preflight.js",
+    "deploy:dev": "echo 'Set GS_BUCKET env var' && gsutil -m cp -a public-read dist/manifest.json dist/cp-gantt.js dist/viz-cp-gantt.json dist/viz-cp-gantt.css gs://$GS_BUCKET/cp-gantt/dev/ && gsutil -m setmeta -h 'Cache-Control:no-cache, max-age=0' gs://$GS_BUCKET/cp-gantt/dev/**",
+    "deploy:prod": "echo 'Set GS_BUCKET and VERSION env vars' && gsutil -m cp -a public-read dist/manifest.json gs://$GS_BUCKET/cp-gantt/$VERSION/ && gsutil -m cp -a public-read dist/cp-gantt.$VERSION.js dist/viz-cp-gantt.json dist/viz-cp-gantt.css gs://$GS_BUCKET/cp-gantt/$VERSION/ && gsutil -m setmeta -h 'Cache-Control:public, max-age=86400, immutable' gs://$GS_BUCKET/cp-gantt/$VERSION/**"
   },
   "devDependencies": {
     "esbuild": "0.21.5",
