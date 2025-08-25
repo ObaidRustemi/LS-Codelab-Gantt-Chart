@@ -106,10 +106,35 @@ export function drawViz(objectData) {
     const strokeColor = objectData.style?.appearance?.todayLineColor;
     const strokeWidth = (objectData.style?.appearance?.todayLineWidth || 3);
     const line = g.append('line')
-      .attr('x1', x(today)).attr('x2', x(today)).attr('y1', -18).attr('y2', innerHeight)
+      .attr('y1', -18).attr('y2', innerHeight)
       .attr('stroke-width', strokeWidth)
       .attr('class', 'today-line');
     if (strokeColor) line.attr('stroke', strokeColor);
+
+    const updateToday = () => {
+      const now = new Date();
+      // If system date is outside the domain (e.g., different year), try anchoring MM/DD to the dataset year
+      let candidate = now;
+      if (now < minDate || now > maxDate) {
+        // Try min year
+        let t = new Date(minDate.getFullYear(), now.getMonth(), now.getDate());
+        if (t >= minDate && t <= maxDate) candidate = t; else {
+          // Try max year
+          t = new Date(maxDate.getFullYear(), now.getMonth(), now.getDate());
+          if (t >= minDate && t <= maxDate) candidate = t;
+        }
+      }
+      // Final clamp to ensure visibility
+      const clamped = candidate < minDate ? minDate : (candidate > maxDate ? maxDate : candidate);
+      const xx = x(clamped);
+      line.attr('x1', xx).attr('x2', xx);
+    };
+    updateToday();
+
+    if (typeof window !== 'undefined') {
+      if (window.__cpGanttTodayTimer) clearInterval(window.__cpGanttTodayTimer);
+      window.__cpGanttTodayTimer = setInterval(updateToday, 60 * 1000);
+    }
   }
 
   const tooltip = ensureTooltip();
