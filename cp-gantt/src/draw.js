@@ -249,23 +249,45 @@ export function drawViz(objectData) {
   // Keyboard navigation: Left/Right = 1 week; PageUp/PageDown = 1 month
   const keyboardState = { lastKey: null, lastTime: 0, timer: null };
   const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const HOLD_WEEKS_PER_SEC = 0.33; // ~1 week every ~3 seconds when holding
+
+  // Smooth animated panning for keyboard nudges
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  let rafId = null;
+  function animatePan(shiftMs, baseYear, duration = 240) {
+    if (rafId) cancelAnimationFrame(rafId);
+    const startStart = new Date(viewState.start);
+    const widthMs = +viewState.end - +viewState.start;
+    const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const step = () => {
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = easeOutCubic(t);
+      const currentShift = shiftMs * eased;
+      const nextStart = new Date(+startStart + currentShift);
+      const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs), baseYear);
+      x.domain([cs, ce]);
+      viewState.start = cs; viewState.end = ce;
+      renderAll();
+      if (t < 1) { rafId = requestAnimationFrame(step); } else { rafId = null; }
+    };
+    rafId = requestAnimationFrame(step);
+  }
 
   function nudgeWeeks(direction, multiplier) {
     const shiftMs = direction * ONE_WEEK_MS * (multiplier || 1);
-    // Lock to current year briefly for a burst of key presses
     if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
-    applyPan(shiftMs);
-    // Clear lock after short idle so next burst can re-lock
+    const duration = (multiplier && multiplier > 1) ? 220 : 960; // slower single press, faster double-press
+    animatePan(shiftMs, viewState.activeYear, duration);
     if (keyboardState.timer) clearTimeout(keyboardState.timer);
     keyboardState.timer = setTimeout(() => { viewState.activeYear = null; }, 350);
   }
 
   function nudgeMonths(direction) {
     if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
-    const nextStart = d3.timeMonth.offset(viewState.start, direction);
-    const widthMs = +viewState.end - +viewState.start;
-    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs), viewState.activeYear);
-    applyDomain(cs, ce);
+    const targetStart = d3.timeMonth.offset(viewState.start, direction);
+    const shiftMs = +targetStart - +viewState.start;
+    animatePan(shiftMs, viewState.activeYear, 280);
     if (keyboardState.timer) clearTimeout(keyboardState.timer);
     keyboardState.timer = setTimeout(() => { viewState.activeYear = null; }, 350);
   }
@@ -278,16 +300,61 @@ export function drawViz(objectData) {
     const isRepeat = (keyboardState.lastKey === key) && (now - keyboardState.lastTime < 300);
     keyboardState.lastKey = key; keyboardState.lastTime = now;
     const accel = isRepeat ? 3 : 1; // accelerate on quick double-press
-    if (key === 'ArrowLeft') return nudgeWeeks(-1, accel);
-    if (key === 'ArrowRight') return nudgeWeeks(1, accel);
+    if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      const dir = key === 'ArrowLeft' ? -1 : 1;
+      nudgeWeeks(dir, accel);
+      // Start smooth hold after a short delay (ignore OS key-repeat bursts)
+      holdScheduleStart(dir);
+      return;
+    }
     if (key === 'PageUp') return nudgeMonths(-1);
     if (key === 'PageDown') return nudgeMonths(1);
+  }
+
+  // Smooth HOLD handling for arrows
+  const holdState = { dir: 0, raf: null, lastTs: 0, startTimer: null };
+  function holdScheduleStart(dir) {
+    if (holdState.startTimer) clearTimeout(holdState.startTimer);
+    holdState.startTimer = setTimeout(() => startHold(dir), 320);
+  }
+  function startHold(dir) {
+    if (!dir) return;
+    if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
+    holdState.dir = dir;
+    holdState.lastTs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (holdState.raf) cancelAnimationFrame(holdState.raf);
+    const step = () => {
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const dtSec = Math.min(0.05, Math.max(0, (now - holdState.lastTs) / 1000)); // clamp delta for stability
+      holdState.lastTs = now;
+      const shiftMs = holdState.dir * ONE_WEEK_MS * HOLD_WEEKS_PER_SEC * dtSec;
+      applyPan(shiftMs);
+      holdState.raf = requestAnimationFrame(step);
+    };
+    holdState.raf = requestAnimationFrame(step);
+  }
+  function stopHold() {
+    if (holdState.startTimer) { clearTimeout(holdState.startTimer); holdState.startTimer = null; }
+    if (holdState.raf) { cancelAnimationFrame(holdState.raf); holdState.raf = null; }
+    holdState.dir = 0;
+    if (keyboardState.timer) clearTimeout(keyboardState.timer);
+    keyboardState.timer = setTimeout(() => { viewState.activeYear = null; }, 250);
+  }
+
+  function onKeyUp(ev) {
+    const key = ev.key;
+    if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      stopHold();
+    }
   }
 
   if (typeof window !== 'undefined') {
     if (window.__cpGanttKeyHandler) window.removeEventListener('keydown', window.__cpGanttKeyHandler);
     window.__cpGanttKeyHandler = onKeyDown;
     window.addEventListener('keydown', window.__cpGanttKeyHandler);
+    if (window.__cpGanttKeyUpHandler) window.removeEventListener('keyup', window.__cpGanttKeyUpHandler);
+    window.__cpGanttKeyUpHandler = onKeyUp;
+    window.addEventListener('keyup', window.__cpGanttKeyUpHandler);
   }
 
   function updateTodayLine() {
