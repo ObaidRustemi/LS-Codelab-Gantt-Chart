@@ -42,105 +42,32 @@ export function drawViz(objectData) {
   const barHeight = 18;
   const innerHeight = Math.max(rows.length * (rowHeight + rowGap), height - margin.top - margin.bottom);
 
-  const x = createTimeScale([minDate, maxDate], [0, innerWidth]);
+  let x = createTimeScale([minDate, maxDate], [0, innerWidth]);
   const y = createRowScale(rows.map(r => r.key), innerHeight, rowHeight + rowGap);
 
   const svg = d3.select(container).append('svg').attr('width', width).attr('height', margin.top + innerHeight + margin.bottom);
   const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-  // Header: Month RANGE and per-month labels
-  const startMonth = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-  const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
-  const sameMonth = startMonth.getFullYear() === endMonth.getFullYear() && startMonth.getMonth() === endMonth.getMonth();
-  const fmtShort = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
-  const fmtLong = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
-  const titleText = sameMonth
-    ? fmtLong.format(startMonth).toUpperCase()
-    : `${fmtShort.format(startMonth).toUpperCase()} – ${fmtShort.format(endMonth).toUpperCase()}`;
-  svg.append('text').attr('x', width / 2).attr('y', 26).attr('text-anchor', 'middle').attr('class', 'month-title').text(titleText);
-
+  // Groups for dynamic content (rendered and re-rendered on pan/zoom)
+  const monthTitle = svg.append('text').attr('x', width / 2).attr('y', 26).attr('text-anchor', 'middle').attr('class', 'month-title');
   const monthsG = svg.append('g').attr('transform', `translate(${margin.left},${margin.top - 34})`);
-  const monthStarts = [];
-  let cur = new Date(startMonth);
-  while (cur <= endMonth) { monthStarts.push(new Date(cur)); cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); }
-  monthStarts.forEach((m, idx) => {
-    const x0 = x(m);
-    const next = monthStarts[idx + 1];
-    const x1 = next ? x(next) : x(maxDate);
-    const cx = (x0 + x1) / 2;
-    monthsG.append('text').attr('x', cx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'week-label').text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
-  });
-
-  // Week labels (every Monday) across the range
   const weeksG = svg.append('g').attr('transform', `translate(${margin.left},${margin.top - 14})`);
-  const startMonday = d3.timeMonday.floor(minDate);
-  const endMonday = d3.timeMonday.ceil(maxDate);
-  const weekDates = d3.timeMonday.every(1).range(startMonday, endMonday);
-  weekDates.forEach((d) => {
-    const xx = x(d);
-    weeksG.append('text')
-      .attr('x', xx)
-      .attr('y', 0)
-      .attr('text-anchor', 'middle')
-      .attr('class', 'week-label')
-      .text(`${d.getMonth() + 1}/${d.getDate()}`);
-  });
-
-  // Vertical grid at each week
   const grid = g.append('g').attr('class', 'grid');
-  weekDates.forEach((d) => { grid.append('line').attr('x1', x(d)).attr('x2', x(d)).attr('y1', 0).attr('y2', innerHeight).attr('stroke', '#202938'); });
-
-  // Month end dotted lines
   const monthEndG = g.append('g');
-  for (let i = 0; i < monthStarts.length; i++) {
-    const nextStart = monthStarts[i + 1];
-    if (!nextStart) break;
-    const xm = x(nextStart);
-    monthEndG.append('line')
-      .attr('x1', xm)
-      .attr('x2', xm)
-      .attr('y1', 0)
-      .attr('y2', innerHeight)
-      .attr('class', 'month-end-line');
-  }
 
   // Left lane header
   svg.append('text').attr('x', 20).attr('y', 26).attr('class', 'header').text('ENGINEERING');
 
-  // Today line with label
+  // Today line
+  let todayLine = null;
   if (objectData.style?.appearance?.showToday !== false) {
     const strokeColor = objectData.style?.appearance?.todayLineColor;
     const strokeWidth = (objectData.style?.appearance?.todayLineWidth || 3);
-    const line = g.append('line')
+    todayLine = g.append('line')
       .attr('y1', -18).attr('y2', innerHeight)
       .attr('stroke-width', strokeWidth)
       .attr('class', 'today-line');
-    if (strokeColor) line.attr('stroke', strokeColor);
-
-    const updateToday = () => {
-      const now = new Date();
-      // If system date is outside the domain (e.g., different year), try anchoring MM/DD to the dataset year
-      let candidate = now;
-      if (now < minDate || now > maxDate) {
-        // Try min year
-        let t = new Date(minDate.getFullYear(), now.getMonth(), now.getDate());
-        if (t >= minDate && t <= maxDate) candidate = t; else {
-          // Try max year
-          t = new Date(maxDate.getFullYear(), now.getMonth(), now.getDate());
-          if (t >= minDate && t <= maxDate) candidate = t;
-        }
-      }
-      // Final clamp to ensure visibility
-      const clamped = candidate < minDate ? minDate : (candidate > maxDate ? maxDate : candidate);
-      const xx = x(clamped);
-      line.attr('x1', xx).attr('x2', xx);
-    };
-    updateToday();
-
-    if (typeof window !== 'undefined') {
-      if (window.__cpGanttTodayTimer) clearInterval(window.__cpGanttTodayTimer);
-      window.__cpGanttTodayTimer = setInterval(updateToday, 60 * 1000);
-    }
+    if (strokeColor) todayLine.attr('stroke', strokeColor);
   }
 
   const tooltip = ensureTooltip();
@@ -188,70 +115,263 @@ export function drawViz(objectData) {
 
   const barsG = g.append('g');
 
-  rows.forEach((r) => {
-    const rowY = rowPositions.get(r.key);
-    const yTop = rowY + (rowHeight - barHeight) / 2;
-    const baseColor = teamToColor.get(r.team);
+  // Controls (right side): Today text and 1M/3M/6M buttons
+  const controlsG = svg.append('g');
+  const controls = {
+    todayText: controlsG.append('text').attr('class', 'header'),
+    buttons: []
+  };
+  const buttonDefs = [
+    { label: '1M', months: 1 },
+    { label: '3M', months: 3 },
+    { label: '6M', months: 6 }
+  ];
+  const buttonWidth = 44;
+  const buttonHeight = 22;
+  const buttonGap = 8;
+  function positionControls() {
+    const totalButtonsW = buttonDefs.length * buttonWidth + (buttonDefs.length - 1) * buttonGap;
+    const rightX = width - 16 - totalButtonsW;
+    const yTop = 14;
+    // Today text to the left
+    const todayStr = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date());
+    controls.todayText.attr('x', rightX - 14).attr('y', yTop + 16).attr('text-anchor', 'end').text(todayStr.toUpperCase());
+    // Buttons
+    controls.buttons.forEach((b) => b.group.remove());
+    controls.buttons = [];
+    buttonDefs.forEach((bd, i) => {
+      const gx = rightX + i * (buttonWidth + buttonGap);
+      const group = controlsG.append('g').attr('transform', `translate(${gx},${yTop})`).attr('class', 'control-button');
+      group.append('rect').attr('rx', 6).attr('width', buttonWidth).attr('height', buttonHeight);
+      group.append('text').attr('x', buttonWidth / 2).attr('y', buttonHeight / 2 + 1).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('class', 'bar-label').text(bd.label);
+      group.style('cursor', 'pointer').on('click', () => setViewMonths(bd.months));
+      controls.buttons.push({ group });
+    });
+  }
 
-    const segs = [];
-    const milestones = [
-      { id: 'CP3', date: r.cp3 },
-      { id: 'CP3.5', date: r.cp35 },
-      { id: 'CP4', date: r.cp4 },
-      { id: 'CP5', date: r.cp5 }
-    ].filter(m => m.date).sort((a, b) => a.date - b.date);
+  // View state and panning
+  const viewState = {
+    start: new Date(x.domain()[0]),
+    end: new Date(x.domain()[1]),
+    isDragging: false,
+    dragStartX: 0,
+    dragStartDomain: null
+  };
 
-    if (milestones.length) {
-      for (let i = 0; i < milestones.length; i++) {
-        const a = milestones[i];
-        const b = milestones[i + 1];
-        if (!b && a.id === 'CP3' && !r.cp5) {
-          barsG.append('rect').attr('x', x(a.date) - 6).attr('y', yTop).attr('width', 12).attr('height', barHeight).attr('rx', 8).attr('fill', milestoneColors['CP3'] || baseColor);
-          continue;
-        }
-        const x0 = x(a.date);
-        const x1 = x(b ? b.date : r.cp5);
-        if (isFinite(x0) && isFinite(x1) && x1 > x0) {
-          segs.push({ label: a.id, x0, x1 });
-        }
+  function clampToYear(start, end) {
+    const viewWidthMs = +end - +start;
+    const year = new Date(start).getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+    const maxStart = new Date(+yearEnd - viewWidthMs);
+    const clampedStart = new Date(Math.max(+yearStart, Math.min(+start, +maxStart)));
+    const clampedEnd = new Date(+clampedStart + viewWidthMs);
+    return [clampedStart, clampedEnd];
+  }
+
+  function applyDomain(start, end) {
+    viewState.start = new Date(start);
+    viewState.end = new Date(end);
+    x.domain([viewState.start, viewState.end]);
+    renderAll();
+  }
+
+  function applyPan(shiftMs) {
+    const widthMs = +viewState.end - +viewState.start;
+    const nextStart = new Date(+viewState.start + shiftMs);
+    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs));
+    applyDomain(cs, ce);
+  }
+
+  function setViewMonths(months) {
+    const nextEnd = new Date(viewState.start);
+    nextEnd.setMonth(viewState.start.getMonth() + months);
+    const [cs, ce] = clampToYear(viewState.start, nextEnd);
+    applyDomain(cs, ce);
+  }
+
+  const panTarget = g.append('rect')
+    .attr('class', 'pan-target')
+    .attr('x', 0)
+    .attr('y', -36)
+    .attr('width', innerWidth)
+    .attr('height', innerHeight + 36);
+
+  function onPanStart(ev) {
+    viewState.isDragging = true;
+    viewState.dragStartX = d3.pointer(ev, g.node())[0];
+    viewState.dragStartDomain = [new Date(viewState.start), new Date(viewState.end)];
+  }
+  function onPanMove(ev) {
+    if (!viewState.isDragging) return;
+    const xNow = d3.pointer(ev, g.node())[0];
+    const dx = xNow - viewState.dragStartX;
+    const domain = viewState.dragStartDomain;
+    const msPerPixel = (+domain[1] - +domain[0]) / innerWidth;
+    const shiftMs = -dx * msPerPixel;
+    const widthMs = +domain[1] - +domain[0];
+    const nextStart = new Date(+domain[0] + shiftMs);
+    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs));
+    x.domain([cs, ce]);
+    // lightweight live update
+    viewState.start = cs; viewState.end = ce;
+    renderAll();
+  }
+  function onPanEnd() { viewState.isDragging = false; }
+  function onWheel(ev) {
+    if (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
+      ev.preventDefault();
+      const msPerPixel = (+viewState.end - +viewState.start) / innerWidth;
+      const shiftMs = -ev.deltaX * msPerPixel;
+      applyPan(shiftMs);
+    }
+  }
+  panTarget.on('pointerdown', onPanStart).on('pointermove', onPanMove).on('pointerup pointerleave', onPanEnd).on('wheel', onWheel, { passive: false });
+
+  function updateTodayLine() {
+    if (!todayLine) return;
+    // Keep today anchored to the active domain year when outside
+    const now = new Date();
+    let candidate = now;
+    if (now < viewState.start || now > viewState.end) {
+      let t = new Date(viewState.start.getFullYear(), now.getMonth(), now.getDate());
+      if (t >= viewState.start && t <= viewState.end) candidate = t; else {
+        t = new Date(viewState.end.getFullYear(), now.getMonth(), now.getDate());
+        if (t >= viewState.start && t <= viewState.end) candidate = t;
       }
     }
+    const clamped = candidate < viewState.start ? viewState.start : (candidate > viewState.end ? viewState.end : candidate);
+    const xx = x(clamped);
+    todayLine.attr('x1', xx).attr('x2', xx);
+  }
 
-    segs.forEach((s, idx) => {
-      const withArrow = idx < segs.length - 1 || !!r.cp5;
-      const d = chevronPath(s.x0, s.x1, yTop, barHeight, 8, withArrow);
-      barsG.append('path')
-        .attr('d', d)
-        .attr('fill', milestoneColors[s.label] || baseColor)
-        .attr('opacity', 0.92)
-        .on('mousemove', (ev) => {
-          const rangeTxt = r.cp5 ? `${r.cp3.toISOString().slice(0,10)} → ${r.cp5.toISOString().slice(0,10)}` : `${r.cp3.toISOString().slice(0,10)} → ?`;
-          const daysRemaining = r.cp5 ? Math.ceil((r.cp5 - today) / (1000*60*60*24)) : null;
-          const html = `<strong>${r.team}</strong> — ${r.project}<br/>${rangeTxt}${daysRemaining!=null?`<br/>Days Remaining: ${daysRemaining}`:''}`;
-          showTooltip(tooltip, html, ev.clientX, ev.clientY);
-        })
-        .on('mouseleave', () => hideTooltip(tooltip))
-        .on('click', () => sendRowFilter(r.team, r.project));
+  function renderHeaderLabels() {
+    const startMonth = new Date(viewState.start.getFullYear(), viewState.start.getMonth(), 1);
+    const endMonthAnchor = new Date(viewState.end.getFullYear(), viewState.end.getMonth(), 1);
+    const sameMonth = startMonth.getFullYear() === endMonthAnchor.getFullYear() && startMonth.getMonth() === endMonthAnchor.getMonth();
+    const fmtShort = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
+    const fmtLong = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+    const titleText = sameMonth ? fmtLong.format(startMonth).toUpperCase() : `${fmtShort.format(startMonth).toUpperCase()} – ${fmtShort.format(endMonthAnchor).toUpperCase()}`;
+    monthTitle.text(titleText);
 
-      barsG.append('text')
-        .attr('x', (s.x0 + s.x1) / 2)
-        .attr('y', yTop + barHeight / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('class', 'bar-label')
-        .text(s.label);
+    // Months row
+    monthsG.selectAll('*').remove();
+    const monthStarts = [];
+    let cur = new Date(startMonth);
+    const lastMonthStart = new Date(endMonthAnchor.getFullYear(), endMonthAnchor.getMonth(), 1);
+    while (cur <= lastMonthStart) { monthStarts.push(new Date(cur)); cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); }
+    monthStarts.forEach((m, idx) => {
+      const x0 = x(m);
+      const next = monthStarts[idx + 1];
+      const x1 = next ? x(next) : x(viewState.end);
+      const cx = (x0 + x1) / 2;
+      monthsG.append('text').attr('x', cx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'week-label').text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
     });
 
-    if (objectData.style?.appearance?.showMilestoneTicks !== false) {
-      const tick = (d, color) =>
-        barsG.append('path')
-          .attr('d', d3.symbol(d3.symbolDiamond, 60))
-          .attr('transform', `translate(${x(d)}, ${yTop + barHeight / 2})`)
-          .attr('fill', color);
-      if (r.cp35) tick(r.cp35, milestoneColors['CP3.5'] || '#fff');
-      if (r.cp4) tick(r.cp4, milestoneColors['CP4'] || '#fff');
+    // Weeks row
+    weeksG.selectAll('*').remove();
+    const startMonday = d3.timeMonday.floor(viewState.start);
+    const endMonday = d3.timeMonday.ceil(viewState.end);
+    const weekDates = d3.timeMonday.every(1).range(startMonday, endMonday);
+    weekDates.forEach((d) => {
+      const xx = x(d);
+      weeksG.append('text').attr('x', xx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'week-label').text(`${d.getMonth() + 1}/${d.getDate()}`);
+    });
+
+    // Grid and month-end lines
+    grid.selectAll('*').remove();
+    weekDates.forEach((d) => { grid.append('line').attr('x1', x(d)).attr('x2', x(d)).attr('y1', 0).attr('y2', innerHeight).attr('stroke', '#202938'); });
+    monthEndG.selectAll('*').remove();
+    for (let i = 0; i < monthStarts.length; i++) {
+      const nextStart = monthStarts[i + 1];
+      if (!nextStart) break;
+      const xm = x(nextStart);
+      monthEndG.append('line').attr('x1', xm).attr('x2', xm).attr('y1', 0).attr('y2', innerHeight).attr('class', 'month-end-line');
     }
-  });
+  }
+
+  function renderBars() {
+    barsG.selectAll('*').remove();
+    rows.forEach((r) => {
+      const rowY = rowPositions.get(r.key);
+      const yTop = rowY + (rowHeight - barHeight) / 2;
+      const baseColor = teamToColor.get(r.team);
+      const segs = [];
+      const milestones = [
+        { id: 'CP3', date: r.cp3 },
+        { id: 'CP3.5', date: r.cp35 },
+        { id: 'CP4', date: r.cp4 },
+        { id: 'CP5', date: r.cp5 }
+      ].filter(m => m.date).sort((a, b) => a.date - b.date);
+      if (milestones.length) {
+        for (let i = 0; i < milestones.length; i++) {
+          const a = milestones[i];
+          const b = milestones[i + 1];
+          if (!b && a.id === 'CP3' && !r.cp5) {
+            barsG.append('rect').attr('x', x(a.date) - 6).attr('y', yTop).attr('width', 12).attr('height', barHeight).attr('rx', 8).attr('fill', milestoneColors['CP3'] || baseColor);
+            continue;
+          }
+          const x0 = x(a.date);
+          const x1 = x(b ? b.date : r.cp5);
+          if (isFinite(x0) && isFinite(x1) && x1 > x0) {
+            segs.push({ label: a.id, x0, x1 });
+          }
+        }
+      }
+      segs.forEach((s, idx) => {
+        const withArrow = idx < segs.length - 1 || !!r.cp5;
+        const d = chevronPath(s.x0, s.x1, yTop, barHeight, 8, withArrow);
+        barsG.append('path')
+          .attr('d', d)
+          .attr('fill', milestoneColors[s.label] || baseColor)
+          .attr('opacity', 0.92)
+          .on('mousemove', (ev) => {
+            const rangeTxt = r.cp5 ? `${r.cp3.toISOString().slice(0,10)} → ${r.cp5.toISOString().slice(0,10)}` : `${r.cp3.toISOString().slice(0,10)} → ?`;
+            const daysRemaining = r.cp5 ? Math.ceil((r.cp5 - today) / (1000*60*60*24)) : null;
+            const html = `<strong>${r.team}</strong> — ${r.project}<br/>${rangeTxt}${daysRemaining!=null?`<br/>Days Remaining: ${daysRemaining}`:''}`;
+            showTooltip(tooltip, html, ev.clientX, ev.clientY);
+          })
+          .on('mouseleave', () => hideTooltip(tooltip))
+          .on('click', () => sendRowFilter(r.team, r.project));
+        barsG.append('text')
+          .attr('x', (s.x0 + s.x1) / 2)
+          .attr('y', yTop + barHeight / 2)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('class', 'bar-label')
+          .text(s.label);
+      });
+      if (objectData.style?.appearance?.showMilestoneTicks !== false) {
+        const tick = (d, color) =>
+          barsG.append('path')
+            .attr('d', d3.symbol(d3.symbolDiamond, 60))
+            .attr('transform', `translate(${x(d)}, ${yTop + barHeight / 2})`)
+            .attr('fill', color);
+        if (r.cp35) tick(r.cp35, milestoneColors['CP3.5'] || '#fff');
+        if (r.cp4) tick(r.cp4, milestoneColors['CP4'] || '#fff');
+      }
+    });
+  }
+
+  function renderAll() {
+    positionControls();
+    renderHeaderLabels();
+    renderBars();
+    updateTodayLine();
+  }
+
+  // Initial paint
+  renderAll();
 
   svg.on('click', (ev) => { if (ev.target.tagName === 'svg') { clearRowFilter(); hideTooltip(tooltip); } });
+
+  // Timers: update today line and today text once per minute
+  const tickUpdate = () => {
+    updateTodayLine();
+    positionControls();
+  };
+  if (typeof window !== 'undefined') {
+    if (window.__cpGanttTimer) clearInterval(window.__cpGanttTimer);
+    window.__cpGanttTimer = setInterval(tickUpdate, 60 * 1000);
+  }
 }
