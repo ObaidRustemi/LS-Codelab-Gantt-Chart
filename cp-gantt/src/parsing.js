@@ -33,29 +33,94 @@ export function parseMaybeDate(value) {
   return null;
 }
 
+// Helper to get first element of array or value itself
+const first = v => Array.isArray(v) ? v[0] : v ?? null;
+
+// Robust date parser for Looker Studio
+function parseDateMaybe(x) {
+  if (!x && x !== 0) return null;
+  if (x instanceof Date && !isNaN(+x)) return x;
+
+  const s = String(first(x)).trim();
+  // YYYYMMDD -> Date (UTC to avoid TZ drift)
+  if (/^\d{8}$/.test(s)) {
+    const y = +s.slice(0,4), m = +s.slice(4,6) - 1, d = +s.slice(6,8);
+    return new Date(Date.UTC(y, m, d));
+  }
+  // epoch ms / epoch s
+  if (/^\d{10,13}$/.test(s)) {
+    const n = s.length === 13 ? +s : (+s * 1000);
+    const dt = new Date(n);
+    return isNaN(+dt) ? null : dt;
+  }
+  // ISO / locale
+  const dt = new Date(s);
+  return isNaN(+dt) ? null : dt;
+}
+
+// Find the right table in Looker Studio data
+function resolveTable(data) {
+  const t = data?.tables || {};
+  // Prefer DEFAULT if present, else first array entry
+  if (Array.isArray(t.DEFAULT)) return t.DEFAULT;
+  const key = Object.keys(t).find(k => Array.isArray(t[k]));
+  return key ? t[key] : [];
+}
+
 export function shapeRows(objectData) {
-  const rows = objectData.tables.DEFAULT || [];
-  // In Looker Studio's objectTransform, row.dimID/metricID objects are keyed by the
-  // field IDs we defined in the config. Use those IDs directly to read values.
-  const idx = {
-    team: 'team',
-    projectName: 'projectName',
-    cp3Date: 'cp3Date',
-    cp35Date: 'cp35Date',
-    cp4Date: 'cp4Date',
-    cp5Date: 'cp5Date',
-  };
-  const shaped = [];
-  rows.forEach((row, i) => {
-    const dim = row?.dimID || {};
-    const team = dim[idx.team];
-    const project = dim[idx.projectName];
-    const cp3 = parseMaybeDate(dim[idx.cp3Date]);
-    if (!cp3) { return; }
-    const cp35 = parseMaybeDate(dim[idx.cp35Date]);
-    const cp4 = parseMaybeDate(dim[idx.cp4Date]);
-    const cp5 = parseMaybeDate(dim[idx.cp5Date]);
-    shaped.push({ team, project, cp3, cp35, cp4, cp5, key: team + '|' + project });
-  });
-  return shaped;
+  console.log('shapeRows called with objectData keys:', Object.keys(objectData || {}));
+  console.log('objectData.tables:', objectData?.tables);
+  console.log('objectData structure:', JSON.stringify(objectData).substring(0, 500));
+  
+  const rawRows = resolveTable(objectData);
+  console.log('Resolved rows:', rawRows.length, 'rows');
+  
+  if (!rawRows.length) return [];
+
+  const out = [];
+
+  for (const r of rawRows) {
+    console.log('Raw row structure:', Object.keys(r));
+    console.log('Full raw row:', JSON.stringify(r).substring(0, 200));
+    
+    // LS payload usually exposes row.dimID with your config element ids as keys
+    const dim = r.dimID || r.dim || r.dimensions || r || {};
+    console.log('Row dim keys:', Object.keys(dim));
+    
+    // read by id, not index; accept synonyms if your config changed
+    const team = first(dim.team);
+    const project = first(dim.summary || dim.projectName || dim.project || dim['Project Name']);
+    const cp3 = parseDateMaybe(dim.cp3Date);
+    const cp35 = parseDateMaybe(dim.cp35Date);
+    const cp4 = parseDateMaybe(dim.cp4Date);
+    const cp5 = parseDateMaybe(dim.cp5Date);
+
+    console.log('Parsed row:', { 
+      team, 
+      project, 
+      cp3: cp3 ? cp3.toISOString() : null,
+      cp35: cp35 ? cp35.toISOString() : null,
+      cp4: cp4 ? cp4.toISOString() : null,
+      cp5: cp5 ? cp5.toISOString() : null
+    });
+
+    // Enforce CP3 required — skip ONLY if truly missing or unparsable
+    if (!team || !cp3) {
+      console.debug('skip row - missing required fields', { 
+        team, 
+        project, 
+        cp3Raw: dim.cp3Date,
+        allDimKeys: Object.keys(dim)
+      });
+      continue;
+    }
+    
+    // Use team as project name if project is missing
+    const finalProject = project || team;
+
+    out.push({ team, project: finalProject, cp3, cp35, cp4, cp5, key: team + '|' + finalProject });
+  }
+
+  console.log('shapeRows returning:', out.length, 'rows');
+  return out;
 }
