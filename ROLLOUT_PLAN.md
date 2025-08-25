@@ -12,73 +12,33 @@ References:
 - viz-cp-gantt.css — stylesheet
 - manifest.json — LS manifest (dev or prod variant)
 
+Why: LS loads one JS file via a manifest; config surfaces data/style controls; CSS provides styling outside the bundle when desired.
+
 ### Google Cloud Storage (GCS) layout (bucket: ls-code-lab)
 - Dev (iterative): gs://ls-code-lab/cp-gantt/dev/
 - Prod (versioned): gs://ls-code-lab/cp-gantt/vN/ (v1, v2, …)
 
+Why: a stable dev path lets us overwrite artifacts without changing the manifest; versioned prod paths keep releases immutable and cache-friendly.
+
 ### Manifests (gs:// URLs)
 Dev (devMode: true)
 ```
-{
-  "name": "CP Gantt",
-  "logoUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png",
-  "organization": "Your Org",
-  "organizationUrl": "https://your-url",
-  "termsOfServiceUrl": "https://your-url/terms",
-  "supportUrl": "https://your-url/support",
-  "packageUrl": "https://your-url",
-  "privacyPolicyUrl": "https://your-url/privacy",
-  "description": "Calendar Gantt with panning, keyboard, milestones",
-  "devMode": true,
-  "components": [
-    {
-      "id": "cpGantt",
-      "name": "CP Gantt",
-      "iconUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png",
-      "description": "Engineering schedule Gantt",
-      "resource": {
-        "js": "gs://ls-code-lab/cp-gantt/dev/cp-gantt.js",
-        "config": "gs://ls-code-lab/cp-gantt/dev/viz-cp-gantt.json",
-        "css": "gs://ls-code-lab/cp-gantt/dev/viz-cp-gantt.css"
-      }
-    }
-  ]
-}
+{ "name": "CP Gantt", "logoUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png", "organization": "Your Org", "organizationUrl": "https://your-url", "termsOfServiceUrl": "https://your-url/terms", "supportUrl": "https://your-url/support", "packageUrl": "https://your-url", "privacyPolicyUrl": "https://your-url/privacy", "description": "Calendar Gantt with panning, keyboard, milestones", "devMode": true, "components": [ { "id": "cpGantt", "name": "CP Gantt", "iconUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png", "description": "Engineering schedule Gantt", "resource": { "js": "gs://ls-code-lab/cp-gantt/dev/cp-gantt.js", "config": "gs://ls-code-lab/cp-gantt/dev/viz-cp-gantt.json", "css": "gs://ls-code-lab/cp-gantt/dev/viz-cp-gantt.css" } } ] }
 ```
 
 Prod (devMode: false; example v1)
 ```
-{
-  "name": "CP Gantt",
-  "logoUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png",
-  "organization": "Your Org",
-  "organizationUrl": "https://your-url",
-  "termsOfServiceUrl": "https://your-url/terms",
-  "supportUrl": "https://your-url/support",
-  "packageUrl": "https://your-url",
-  "privacyPolicyUrl": "https://your-url/privacy",
-  "description": "Calendar Gantt with panning, keyboard, milestones",
-  "devMode": false,
-  "components": [
-    {
-      "id": "cpGantt",
-      "name": "CP Gantt",
-      "iconUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png",
-      "description": "Engineering schedule Gantt",
-      "resource": {
-        "js": "gs://ls-code-lab/cp-gantt/v1/cp-gantt.v1.js",
-        "config": "gs://ls-code-lab/cp-gantt/v1/viz-cp-gantt.json",
-        "css": "gs://ls-code-lab/cp-gantt/v1/viz-cp-gantt.css"
-      }
-    }
-  ]
-}
+{ "name": "CP Gantt", "logoUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png", "organization": "Your Org", "organizationUrl": "https://your-url", "termsOfServiceUrl": "https://your-url/terms", "supportUrl": "https://your-url/support", "packageUrl": "https://your-url", "privacyPolicyUrl": "https://your-url/privacy", "description": "Calendar Gantt with panning, keyboard, milestones", "devMode": false, "components": [ { "id": "cpGantt", "name": "CP Gantt", "iconUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/assets/icon.png", "description": "Engineering schedule Gantt", "resource": { "js": "gs://ls-code-lab/cp-gantt/v1/cp-gantt.v1.js", "config": "gs://ls-code-lab/cp-gantt/v1/viz-cp-gantt.json", "css": "gs://ls-code-lab/cp-gantt/v1/viz-cp-gantt.css" } } ] }
 ```
+
+Why: devMode true minimizes caching during iteration; devMode false speeds up production loads. gs:// URLs follow Google’s examples and work directly with LS.
 
 ### One-time bucket IAM (public read)
 ```
 gsutil iam ch allUsers:objectViewer gs://ls-code-lab
 ```
+
+Why: LS must fetch resources anonymously over the public internet; objectViewer makes files world-readable without exposing write access.
 
 ### Dev deploy (no manifest edits after first use)
 ```
@@ -92,6 +52,8 @@ gsutil -m setmeta -h "Cache-Control:no-cache, max-age=0" gs://ls-code-lab/cp-gan
 # Paste this in Looker Studio → Build your own
 gs://ls-code-lab/cp-gantt/dev/manifest.json
 ```
+
+Why: public-read exposes artifacts; no-cache ensures edits are immediately visible in LS without changing the manifest.
 
 ### Prod deploy (versioned; long cache)
 ```
@@ -108,7 +70,11 @@ gsutil -m setmeta -h "Cache-Control:public, max-age=86400, immutable" gs://ls-co
 gs://ls-code-lab/cp-gantt/$VERSION/manifest.json
 ```
 
+Why: versioning preserves reproducible builds; long-lived caching keeps reports fast and reduces egress.
+
 Optional: keep a stable prod manifest at gs://ls-code-lab/cp-gantt/prod/manifest.json and update its resource URLs from vN → vN+1 per release.
+
+Why: teams can paste one URL once; you can promote new versions by updating only the prod manifest.
 
 ### Config JSON (IDs we expect in LS)
 Data elements
@@ -130,11 +96,15 @@ Style elements (subset)
 - monthGlow CHECKBOX (default true)
 - enableDrag/enableWheel/keyboardAccel CHECKBOX (default true)
 
+Why: these IDs map directly to our code’s `objectData.style.appearance` and field ingestion, ensuring LS controls drive the same behavior we use locally.
+
 ### Acceptance checks
 - Manifest loads in Looker Studio; fields appear and map correctly.
 - Dev manifest fetches latest code after upload (no manual manifest edits).
 - Prod manifest is stable; version bumps create new URLs; caching is long.
 - Visualization behavior matches local: panning/keyboard, year clamp, clip-path, month labels, Today line.
+
+Why: validates the full path from hosting to runtime behaviors and avoids regressions in LS.
 
 ### Next actions
 1) Add build step to emit `dist/` with: cp-gantt.js, viz-cp-gantt.json, viz-cp-gantt.css, manifest.json.
