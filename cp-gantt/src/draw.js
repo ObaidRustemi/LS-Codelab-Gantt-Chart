@@ -29,6 +29,12 @@ export function drawViz(objectData) {
   const themeColors = objectData.theme?.seriesColor || [];
   teams.forEach((t, i) => teamToColor.set(t, themeColors[i % themeColors.length] || d3.schemeTableau10[i % 10]));
 
+  const milestoneColors = {
+    'CP3': '#22c55e',   // green
+    'CP3.5': '#8b5cf6', // purple
+    'CP4': '#f59e0b'    // orange
+  };
+
   const margin = { top: 76, right: 24, bottom: 24, left: 260 };
   const innerWidth = Math.max(300, width - margin.left - margin.right);
   const rowHeight = objectData.style?.appearance?.rowHeight || 28;
@@ -200,7 +206,7 @@ export function drawViz(objectData) {
         const a = milestones[i];
         const b = milestones[i + 1];
         if (!b && a.id === 'CP3' && !r.cp5) {
-          barsG.append('rect').attr('x', x(a.date) - 6).attr('y', yTop).attr('width', 12).attr('height', barHeight).attr('rx', 8).attr('fill', baseColor);
+          barsG.append('rect').attr('x', x(a.date) - 6).attr('y', yTop).attr('width', 12).attr('height', barHeight).attr('rx', 8).attr('fill', milestoneColors['CP3'] || baseColor);
           continue;
         }
         const x0 = x(a.date);
@@ -216,7 +222,7 @@ export function drawViz(objectData) {
       const d = chevronPath(s.x0, s.x1, yTop, barHeight, 8, withArrow);
       barsG.append('path')
         .attr('d', d)
-        .attr('fill', baseColor)
+        .attr('fill', milestoneColors[s.label] || baseColor)
         .attr('opacity', 0.92)
         .on('mousemove', (ev) => {
           const rangeTxt = r.cp5 ? `${r.cp3.toISOString().slice(0,10)} → ${r.cp5.toISOString().slice(0,10)}` : `${r.cp3.toISOString().slice(0,10)} → ?`;
@@ -237,9 +243,13 @@ export function drawViz(objectData) {
     });
 
     if (objectData.style?.appearance?.showMilestoneTicks !== false) {
-      const tick = (d) => barsG.append('path').attr('d', d3.symbol(d3.symbolDiamond, 60)).attr('transform', `translate(${x(d)}, ${yTop + barHeight / 2})`).attr('fill', '#fff');
-      if (r.cp35) tick(r.cp35);
-      if (r.cp4) tick(r.cp4);
+      const tick = (d, color) =>
+        barsG.append('path')
+          .attr('d', d3.symbol(d3.symbolDiamond, 60))
+          .attr('transform', `translate(${x(d)}, ${yTop + barHeight / 2})`)
+          .attr('fill', color);
+      if (r.cp35) tick(r.cp35, milestoneColors['CP3.5'] || '#fff');
+      if (r.cp4) tick(r.cp4, milestoneColors['CP4'] || '#fff');
     }
   });
 
