@@ -249,7 +249,7 @@ export function drawViz(objectData) {
   // Keyboard navigation: Left/Right = 1 week; PageUp/PageDown = 1 month
   const keyboardState = { lastKey: null, lastTime: 0, timer: null };
   const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-  const HOLD_WEEKS_PER_SEC = 0.33; // ~1 week every ~3 seconds when holding
+  const HOLD_WEEKS_PER_SEC = 0.18; // slower hold: ~1 week every ~5.5 seconds
 
   // Smooth animated panning for keyboard nudges
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -312,7 +312,7 @@ export function drawViz(objectData) {
   }
 
   // Smooth HOLD handling for arrows
-  const holdState = { dir: 0, raf: null, lastTs: 0, startTimer: null };
+  const holdState = { dir: 0, raf: null, lastTs: 0, startTimer: null, velocityMsPerSec: 0 };
   function holdScheduleStart(dir) {
     if (holdState.startTimer) clearTimeout(holdState.startTimer);
     holdState.startTimer = setTimeout(() => startHold(dir), 320);
@@ -322,12 +322,17 @@ export function drawViz(objectData) {
     if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
     holdState.dir = dir;
     holdState.lastTs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    holdState.velocityMsPerSec = 0;
     if (holdState.raf) cancelAnimationFrame(holdState.raf);
     const step = () => {
       const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      const dtSec = Math.min(0.05, Math.max(0, (now - holdState.lastTs) / 1000)); // clamp delta for stability
+      const dtSec = Math.min(0.04, Math.max(0, (now - holdState.lastTs) / 1000)); // tighter clamp for stability
       holdState.lastTs = now;
-      const shiftMs = holdState.dir * ONE_WEEK_MS * HOLD_WEEKS_PER_SEC * dtSec;
+      // Smooth velocity ramp towards target for ultra-smooth motion
+      const targetVel = holdState.dir * ONE_WEEK_MS * HOLD_WEEKS_PER_SEC; // ms per second
+      const SMOOTH_ALPHA = 0.12; // approach target by ~12% per frame
+      holdState.velocityMsPerSec += (targetVel - holdState.velocityMsPerSec) * SMOOTH_ALPHA;
+      const shiftMs = holdState.velocityMsPerSec * dtSec;
       applyPan(shiftMs);
       holdState.raf = requestAnimationFrame(step);
     };
