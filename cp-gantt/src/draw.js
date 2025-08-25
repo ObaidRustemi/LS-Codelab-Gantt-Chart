@@ -160,12 +160,13 @@ export function drawViz(objectData) {
     end: new Date(x.domain()[1]),
     isDragging: false,
     dragStartX: 0,
-    dragStartDomain: null
+    dragStartDomain: null,
+    activeYear: null
   };
 
-  function clampToYear(start, end) {
+  function clampToYear(start, end, baseYear) {
     const viewWidthMs = +end - +start;
-    const year = new Date(start).getFullYear();
+    const year = (baseYear != null) ? baseYear : new Date(start).getFullYear();
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
     const maxStart = new Date(+yearEnd - viewWidthMs);
@@ -184,7 +185,8 @@ export function drawViz(objectData) {
   function applyPan(shiftMs) {
     const widthMs = +viewState.end - +viewState.start;
     const nextStart = new Date(+viewState.start + shiftMs);
-    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs));
+    const baseYear = viewState.activeYear != null ? viewState.activeYear : viewState.start.getFullYear();
+    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs), baseYear);
     applyDomain(cs, ce);
   }
 
@@ -215,6 +217,7 @@ export function drawViz(objectData) {
     viewState.isDragging = true;
     viewState.dragStartX = d3.pointer(ev, g.node())[0];
     viewState.dragStartDomain = [new Date(viewState.start), new Date(viewState.end)];
+    viewState.activeYear = viewState.start.getFullYear();
   }
   function onPanMove(ev) {
     if (!viewState.isDragging) return;
@@ -225,13 +228,14 @@ export function drawViz(objectData) {
     const shiftMs = -dx * msPerPixel;
     const widthMs = +domain[1] - +domain[0];
     const nextStart = new Date(+domain[0] + shiftMs);
-    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs));
+    const baseYear = viewState.activeYear != null ? viewState.activeYear : viewState.start.getFullYear();
+    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs), baseYear);
     x.domain([cs, ce]);
     // lightweight live update
     viewState.start = cs; viewState.end = ce;
     renderAll();
   }
-  function onPanEnd() { viewState.isDragging = false; }
+  function onPanEnd() { viewState.isDragging = false; viewState.activeYear = null; }
   function onWheel(ev) {
     if (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
       ev.preventDefault();
