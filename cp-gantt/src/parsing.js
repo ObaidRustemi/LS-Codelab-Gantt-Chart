@@ -68,24 +68,15 @@ function resolveTable(data) {
 }
 
 export function shapeRows(objectData) {
-  console.log('shapeRows called with objectData keys:', Object.keys(objectData || {}));
-  console.log('objectData.tables:', objectData?.tables);
-  console.log('objectData structure:', JSON.stringify(objectData).substring(0, 500));
-  
   const rawRows = resolveTable(objectData);
-  console.log('Resolved rows:', rawRows.length, 'rows');
   
   if (!rawRows.length) return [];
 
   const out = [];
 
   for (const r of rawRows) {
-    console.log('Raw row structure:', Object.keys(r));
-    console.log('Full raw row:', JSON.stringify(r).substring(0, 200));
-    
     // LS payload usually exposes row.dimID with your config element ids as keys
     const dim = r.dimID || r.dim || r.dimensions || r || {};
-    console.log('Row dim keys:', Object.keys(dim));
     
     // read by id, not index; accept synonyms if your config changed
     const team = first(dim.team);
@@ -95,23 +86,8 @@ export function shapeRows(objectData) {
     const cp4 = parseDateMaybe(dim.cp4Date);
     const cp5 = parseDateMaybe(dim.cp5Date);
 
-    console.log('Parsed row:', { 
-      team, 
-      project, 
-      cp3: cp3 ? cp3.toISOString() : null,
-      cp35: cp35 ? cp35.toISOString() : null,
-      cp4: cp4 ? cp4.toISOString() : null,
-      cp5: cp5 ? cp5.toISOString() : null
-    });
-
     // Enforce CP3 required — skip ONLY if truly missing or unparsable
     if (!team || !cp3) {
-      console.debug('skip row - missing required fields', { 
-        team, 
-        project, 
-        cp3Raw: dim.cp3Date,
-        allDimKeys: Object.keys(dim)
-      });
       continue;
     }
     
@@ -121,6 +97,5 @@ export function shapeRows(objectData) {
     out.push({ team, project: finalProject, cp3, cp35, cp4, cp5, key: team + '|' + finalProject });
   }
 
-  console.log('shapeRows returning:', out.length, 'rows');
   return out;
 }

@@ -35,8 +35,7 @@ export function drawViz(objectData) {
   const width = size.w;
   const height = size.h;
   
-  // Debug dimensions
-  console.log('Dimensions:', { width, height, dsccAvailable: !!dscc.getWidth, size });
+
   let container = document.getElementById('container');
   if (!container) { container = document.createElement('div'); container.id = 'container'; document.body.appendChild(container); }
   container.innerHTML = '';
@@ -73,10 +72,8 @@ export function drawViz(objectData) {
   }
 
   let rows = shapeRows(objectData) || [];
-  console.log('Raw rows from shapeRows:', rows);
   // Guard against any undefined entries
   rows = rows.filter((r) => r && r.cp3);
-  console.log('Filtered rows:', rows);
   const today = new Date();
 
   const cp3s = rows.map(r => r.cp3).filter(Boolean);
@@ -110,21 +107,6 @@ export function drawViz(objectData) {
     200
   );
   
-  // Debug style values
-  console.log('Style values:', { 
-    rowHeight, 
-    rawRowHeight: objectData.style?.rowHeight,
-    style: objectData.style 
-  });
-  console.log('Dimensions check:', {
-    width,
-    height,
-    innerWidth,
-    innerHeight,
-    rowsLength: rowsLen,
-    margins: margin
-  });
-
   let x = createTimeScale([minDate, maxDate], [0, innerWidth]);
   const y = createRowScale(rows.map(r => r.key), innerHeight, rowHeight + rowGap);
 
@@ -604,8 +586,7 @@ export function drawViz(objectData) {
 
   function renderBars() {
     barsG.selectAll('*').remove();
-    console.log('renderBars called with rows:', rows);
-    console.log('rowPositions:', rowPositions);
+
   rows.forEach((r) => {
     const rowY = rowPositions.get(r.key);
     const yTop = rowY + (rowHeight - barHeight) / 2;

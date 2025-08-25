@@ -14,7 +14,7 @@
       "iconUrl": "https://dummyimage.com/96x96/000/fff.png&text=G",
       "description": "Engineering schedule Gantt",
       "resource": {
-        "js": "gs://$GS_BUCKET/cp-gantt/$VERSION/cp-gantt.$VERSION.js",
+        "js": "gs://$GS_BUCKET/cp-gantt/$VERSION/cp-gantt.js",
         "config": "gs://$GS_BUCKET/cp-gantt/$VERSION/viz-cp-gantt.json",
         "css": "gs://$GS_BUCKET/cp-gantt/$VERSION/viz-cp-gantt.css"
       }
