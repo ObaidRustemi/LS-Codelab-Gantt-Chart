@@ -48,12 +48,24 @@ export function drawViz(objectData) {
   const svg = d3.select(container).append('svg').attr('width', width).attr('height', margin.top + innerHeight + margin.bottom);
   const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
+  // Clip path to occlude bars/grid/today within the plot area (prevents bleed into left rail)
+  const clipId = `plot-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const defs = svg.append('defs');
+  defs.append('clipPath')
+    .attr('id', clipId)
+    .attr('clipPathUnits', 'userSpaceOnUse')
+    .append('rect')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', innerWidth)
+    .attr('height', innerHeight);
+
   // Groups for dynamic content (rendered and re-rendered on pan/zoom)
   const monthTitle = svg.append('text').attr('x', width / 2).attr('y', 26).attr('text-anchor', 'middle').attr('class', 'month-title');
   const monthsG = svg.append('g').attr('transform', `translate(${margin.left},${margin.top - 34})`);
   const weeksG = svg.append('g').attr('transform', `translate(${margin.left},${margin.top - 14})`);
-  const grid = g.append('g').attr('class', 'grid');
-  const monthEndG = g.append('g');
+  const grid = g.append('g').attr('class', 'grid').attr('clip-path', `url(#${clipId})`);
+  const monthEndG = g.append('g').attr('clip-path', `url(#${clipId})`);
 
   // Left lane header
   svg.append('text').attr('x', 20).attr('y', 26).attr('class', 'header').text('ENGINEERING');
@@ -66,7 +78,8 @@ export function drawViz(objectData) {
     todayLine = g.append('line')
       .attr('y1', -18).attr('y2', innerHeight)
       .attr('stroke-width', strokeWidth)
-      .attr('class', 'today-line');
+      .attr('class', 'today-line')
+      .attr('clip-path', `url(#${clipId})`);
     if (strokeColor) todayLine.attr('stroke', strokeColor);
   }
 
@@ -113,7 +126,7 @@ export function drawViz(objectData) {
     yCursor += 4;
   });
 
-  const barsG = g.append('g');
+  const barsG = g.append('g').attr('clip-path', `url(#${clipId})`);
 
   // Controls (right side): Today text and 1M/3M/6M buttons
   const controlsG = svg.append('g');
@@ -492,6 +505,8 @@ export function drawViz(objectData) {
     renderHeaderLabels();
     renderBars();
     updateTodayLine();
+    // Ensure left rail cards (negative x) sit above clipped plot content
+    cardsG.raise();
   }
 
   // Initial paint
