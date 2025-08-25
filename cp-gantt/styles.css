@@ -9,6 +9,7 @@ svg { display: block; width: 100%; height: 100%; }
 .month-title { font-weight: 700; font-size: 16px; fill: #d7deea; }
 .week-label { font-size: 12px; fill: #909bb0; }
 .today-line { stroke-dasharray: 4 3; }
+.month-end-line { stroke: #6b7280; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
 
 .card-bg { fill: var(--panel); opacity: 0.55; }
 .card-title { fill: #e9eef7; font-size: 14px; font-weight: 600; }

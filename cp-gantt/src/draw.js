@@ -84,6 +84,20 @@ export function drawViz(objectData) {
   const grid = g.append('g').attr('class', 'grid');
   weekDates.forEach((d) => { grid.append('line').attr('x1', x(d)).attr('x2', x(d)).attr('y1', 0).attr('y2', innerHeight).attr('stroke', '#202938'); });
 
+  // Month end dotted lines
+  const monthEndG = g.append('g');
+  for (let i = 0; i < monthStarts.length; i++) {
+    const nextStart = monthStarts[i + 1];
+    if (!nextStart) break;
+    const xm = x(nextStart);
+    monthEndG.append('line')
+      .attr('x1', xm)
+      .attr('x2', xm)
+      .attr('y1', 0)
+      .attr('y2', innerHeight)
+      .attr('class', 'month-end-line');
+  }
+
   // Left lane header
   svg.append('text').attr('x', 20).attr('y', 26).attr('class', 'header').text('ENGINEERING');
 
