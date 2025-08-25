@@ -21,6 +21,17 @@ if (typeof window !== 'undefined') {
       import('../sample-data/localData.js').then(({ payload }) => usePayload(payload));
     }
   } else {
-    dscc.subscribeToData(drawViz, { transform: dscc.objectTransform });
+    const safeDraw = (data) => {
+      try {
+        drawViz(data);
+      } catch (e) {
+        const id = 'cpg-error';
+        let el = document.getElementById(id);
+        if (!el) { el = document.createElement('div'); el.id = id; document.body.appendChild(el); }
+        el.textContent = 'Render error: ' + (e?.message || e);
+        el.style.position = 'absolute'; el.style.left = '12px'; el.style.top = '12px'; el.style.color = '#f59e0b'; el.style.font = '12px monospace';
+      }
+    };
+    dscc.subscribeToData(safeDraw, { transform: dscc.objectTransform });
   }
 }

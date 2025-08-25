@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "concepts",
+      "label": "Fields",
+      "elements": [
+        { "id": "team",        "label": "Team",         "type": "DIMENSION", "options": { "min": 1, "max": 1, "supportedTypes": ["DEFAULT"] } },
+        { "id": "projectName", "label": "Project",      "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["DEFAULT"] } },
+        { "id": "cp3Date",     "label": "CP3 Date",     "type": "DIMENSION", "options": { "min": 1, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp35Date",    "label": "CP3.5 Date",   "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp4Date",     "label": "CP4 Date",     "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } },
+        { "id": "cp5Date",     "label": "CP5 Date",     "type": "DIMENSION", "options": { "min": 0, "max": 1, "supportedTypes": ["TIME"] } }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "id": "header",
+      "label": "Header",
+      "elements": [
+        { "type": "FILL_COLOR", "id": "headerBg", "label": "Header Background Color", "defaultValue": "#e0e0e0" }
+      ]
+    }
+  ]
+}
+
+

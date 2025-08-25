@@ -18,10 +18,10 @@
       "id": "appearance",
       "label": "Appearance",
       "elements": [
-        { "id": "rowHeight", "label": "Row height", "type": "NUMBER", "defaultValue": 28 },
+        { "id": "rowHeight", "label": "Row height", "type": "FONT_SIZE", "defaultValue": 28 },
         { "id": "showToday", "label": "Show Today line", "type": "CHECKBOX", "defaultValue": true },
-        { "id": "todayLineColor", "label": "Today line color", "type": "COLOR", "defaultValue": "#f23a2d" },
-        { "id": "todayLineWidth", "label": "Today line width", "type": "NUMBER", "defaultValue": 3 },
+        { "id": "todayLineColor", "label": "Today line color", "type": "FILL_COLOR", "defaultValue": { "color": "#f23a2d" } },
+        { "id": "todayLineWidth", "label": "Today line width", "type": "INTERVAL", "defaultValue": 3 },
         { "id": "showMilestoneTicks", "label": "Milestone ticks", "type": "CHECKBOX", "defaultValue": true }
       ]
     },
@@ -30,7 +30,7 @@
       "label": "Header & Labels",
       "elements": [
         { "id": "monthLabelSize", "label": "Month label size", "type": "FONT_SIZE", "defaultValue": 16 },
-        { "id": "monthLabelColor", "label": "Month label color", "type": "COLOR", "defaultValue": "#f59e0b" },
+        { "id": "monthLabelColor", "label": "Month label color", "type": "FILL_COLOR", "defaultValue": { "color": "#f59e0b" } },
         { "id": "monthGlow", "label": "Month label glow", "type": "CHECKBOX", "defaultValue": true }
       ]
     },

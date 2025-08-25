@@ -1,0 +1,27 @@
+{
+  "name": "Side Hello Viz",
+  "logoUrl": "https://dummyimage.com/96x96/000/fff.png&text=H",
+  "organization": "LS Code Lab",
+  "organizationUrl": "https://example.com",
+  "termsOfServiceUrl": "https://example.com/terms",
+  "supportUrl": "https://example.com/support",
+  "packageUrl": "https://example.com",
+  "privacyPolicyUrl": "https://example.com/privacy",
+  "description": "Minimal hello-world community visualization for pipeline validation.",
+  "devMode": true,
+  "components": [
+    {
+      "id": "helloViz",
+      "name": "Hello Viz",
+      "iconUrl": "https://dummyimage.com/96x96/000/fff.png&text=H",
+      "description": "Renders HELLO PIPELINE to confirm LS wiring.",
+      "resource": {
+        "js": "gs://ls-code-lab/side-viz/dev/viz-codelab.js",
+        "config": "gs://ls-code-lab/side-viz/dev/viz-codelab.json",
+        "css": "gs://ls-code-lab/side-viz/dev/viz-codelab.css"
+      }
+    }
+  ]
+}
+
+
