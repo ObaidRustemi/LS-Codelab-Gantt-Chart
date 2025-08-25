@@ -23,6 +23,11 @@ export function drawViz(objectData) {
     minDate = d3.timeDay.offset(new Date(), -7);
     maxDate = d3.timeDay.offset(new Date(), 7);
   }
+  // Ensure the domain includes today when showing the Today line
+  if (objectData.style?.appearance?.showToday !== false) {
+    if (today < minDate) minDate = new Date(today);
+    if (today > maxDate) maxDate = new Date(today);
+  }
 
   const teams = Array.from(new Set(rows.map(r => r.team)));
   const teamToColor = new Map();
@@ -103,9 +108,11 @@ export function drawViz(objectData) {
 
   // Today line with label
   if (objectData.style?.appearance?.showToday !== false) {
-    g.append('line').attr('x1', x(today)).attr('x2', x(today)).attr('y1', -18).attr('y2', innerHeight)
+    g.append('line')
+      .attr('x1', x(today)).attr('x2', x(today)).attr('y1', -18).attr('y2', innerHeight)
       .attr('stroke', objectData.style?.appearance?.todayLineColor || '#ff0000')
-      .attr('stroke-width', objectData.style?.appearance?.todayLineWidth || 2)
+      .attr('stroke-width', (objectData.style?.appearance?.todayLineWidth || 2) + 1)
+      .attr('opacity', 1)
       .attr('class', 'today-line');
   }
 
