@@ -122,6 +122,7 @@ export function drawViz(objectData) {
     buttons: []
   };
   const buttonDefs = [
+    { label: 'TODAY', onClick: snapToToday },
     { label: '1M', months: 1 },
     { label: '3M', months: 3 },
     { label: '6M', months: 6 }
@@ -144,7 +145,11 @@ export function drawViz(objectData) {
       const group = controlsG.append('g').attr('transform', `translate(${gx},${yTop})`).attr('class', 'control-button');
       group.append('rect').attr('rx', 6).attr('width', buttonWidth).attr('height', buttonHeight);
       group.append('text').attr('x', buttonWidth / 2).attr('y', buttonHeight / 2 + 1).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('class', 'bar-label').text(bd.label);
-      group.style('cursor', 'pointer').on('click', () => setViewMonths(bd.months));
+      if (bd.onClick) {
+        group.style('cursor', 'pointer').on('click', bd.onClick);
+      } else {
+        group.style('cursor', 'pointer').on('click', () => setViewMonths(bd.months));
+      }
       controls.buttons.push({ group });
     });
   }
@@ -187,6 +192,15 @@ export function drawViz(objectData) {
     const nextEnd = new Date(viewState.start);
     nextEnd.setMonth(viewState.start.getMonth() + months);
     const [cs, ce] = clampToYear(viewState.start, nextEnd);
+    applyDomain(cs, ce);
+  }
+
+  function snapToToday() {
+    const widthMs = +viewState.end - +viewState.start;
+    const today = new Date();
+    const tentativeStart = new Date(+today - Math.floor(widthMs / 2));
+    const tentativeEnd = new Date(+tentativeStart + widthMs);
+    const [cs, ce] = clampToYear(tentativeStart, tentativeEnd);
     applyDomain(cs, ce);
   }
 
