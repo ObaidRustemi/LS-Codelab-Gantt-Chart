@@ -1,8 +1,8 @@
 {
   "name": "CP Gantt",
   "organization": "LS Code Lab",
-  "description": "Gantt-style milestone visualization (CP3–CP5) with Today marker and filtering.",
-  "logoUrl": "https://dummyimage.com/96x96/000/fff.png&text=G",
+  "description": "Gantt-style milestone visualization (CP3–CP5) with Today marker and filtering. Version 1.0",
+  "logoUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/v1/cpg-logo.svg",
   "organizationUrl": "https://example.com",
   "supportUrl": "https://example.com",
   "privacyPolicyUrl": "https://example.com/privacy",
@@ -11,7 +11,7 @@
     {
       "id": "cpGantt",
       "name": "CP Gantt",
-      "iconUrl": "https://dummyimage.com/96x96/000/fff.png&text=G",
+      "iconUrl": "https://storage.googleapis.com/ls-code-lab/cp-gantt/v1/cpg-logo.svg",
       "description": "Engineering schedule Gantt",
       "resource": {
         "js": "gs://$GS_BUCKET/cp-gantt/$VERSION/cp-gantt.js",
