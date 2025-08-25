@@ -73,8 +73,10 @@ export function drawViz(objectData) {
   }
 
   let rows = shapeRows(objectData) || [];
+  console.log('Raw rows from shapeRows:', rows);
   // Guard against any undefined entries
   rows = rows.filter((r) => r && r.cp3);
+  console.log('Filtered rows:', rows);
   const today = new Date();
 
   const cp3s = rows.map(r => r.cp3).filter(Boolean);
@@ -602,6 +604,8 @@ export function drawViz(objectData) {
 
   function renderBars() {
     barsG.selectAll('*').remove();
+    console.log('renderBars called with rows:', rows);
+    console.log('rowPositions:', rowPositions);
   rows.forEach((r) => {
     const rowY = rowPositions.get(r.key);
     const yTop = rowY + (rowHeight - barHeight) / 2;
