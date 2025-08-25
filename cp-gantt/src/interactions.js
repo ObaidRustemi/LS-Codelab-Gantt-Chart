@@ -1,4 +1,4 @@
-import * as dscc from '../vendor/dscc.min.js';
+import { dscc } from './globals.js';
 
 export function sendRowFilter(team, project) {
   const concepts = [{ id: 'team', value: team }];

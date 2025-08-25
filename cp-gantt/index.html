@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CP Gantt (LOCAL)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>window.LOCAL = true;</script>
+    <script type="module">
+      import { payload } from './sample-data/localData.js';
+      window.LOCAL_PAYLOAD = payload;
+    </script>
+    <script src="./vendor/dscc.min.js"></script>
+    <script src="./vendor/d3.v7.min.js"></script>
+    <script type="module" src="./src/index.js"></script>
+  </body>
+</html>

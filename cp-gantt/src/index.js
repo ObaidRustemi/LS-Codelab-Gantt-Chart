@@ -1,16 +1,26 @@
-import * as dscc from '../vendor/dscc.min.js';
-import * as d3 from '../vendor/d3.v7.min.js';
+import { dscc } from './globals.js';
 import { drawViz } from './draw.js';
 
 if (typeof window !== 'undefined') {
   const LOCAL = Boolean(window.LOCAL);
   if (LOCAL) {
-    import('../sample-data/localData.js').then(({ payload }) => {
-      drawViz({ data: payload.data, fields: payload.fields, theme: payload.theme, interactions: payload.interactions });
-    });
+    // Use pre-injected payload if available; otherwise dynamic import
+    const w = window;
+    const usePayload = (p) => {
+      drawViz({
+        fields: p.fields,
+        tables: p.data.tables,
+        theme: p.theme,
+        interactions: p.interactions,
+        style: { appearance: {} }
+      });
+    };
+    if (w.LOCAL_PAYLOAD) {
+      usePayload(w.LOCAL_PAYLOAD);
+    } else {
+      import('../sample-data/localData.js').then(({ payload }) => usePayload(payload));
+    }
   } else {
     dscc.subscribeToData(drawViz, { transform: dscc.objectTransform });
   }
 }
-
-export { dscc, d3 };

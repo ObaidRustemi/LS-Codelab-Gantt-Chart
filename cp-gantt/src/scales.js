@@ -1,4 +1,4 @@
-import * as d3 from '../vendor/d3.v7.min.js';
+import { d3 } from './globals.js';
 
 export function createTimeScale(domain, range) {
   const scale = d3.scaleTime().domain(domain).range(range).nice();
