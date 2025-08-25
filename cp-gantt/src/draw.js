@@ -104,7 +104,7 @@ export function drawViz(objectData) {
   // Today line with label
   if (objectData.style?.appearance?.showToday !== false) {
     g.append('line').attr('x1', x(today)).attr('x2', x(today)).attr('y1', -18).attr('y2', innerHeight)
-      .attr('stroke', objectData.style?.appearance?.todayLineColor || '#ff6b6b')
+      .attr('stroke', objectData.style?.appearance?.todayLineColor || '#ff0000')
       .attr('stroke-width', objectData.style?.appearance?.todayLineWidth || 2)
       .attr('class', 'today-line');
   }
