@@ -31,6 +31,36 @@ export const payload = {
             cp4Date: '2025-08-05',
             cp5Date: '2025-09-16'
           }
+        },
+        {
+          dimID: {
+            team: 'CX',
+            projectName: 'CX Project 3',
+            cp3Date: '2025-02-01',
+            cp35Date: '2025-02-20',
+            cp4Date: '2025-03-20',
+            cp5Date: '2025-05-15'
+          }
+        },
+        {
+          dimID: {
+            team: 'PX',
+            projectName: 'PX Project 4',
+            cp3Date: '2025-02-10',
+            cp35Date: '2025-03-01',
+            cp4Date: '2025-04-01',
+            cp5Date: '2025-05-30'
+          }
+        },
+        {
+          dimID: {
+            team: 'CM',
+            projectName: 'CM Project 5',
+            cp3Date: '2025-03-01',
+            cp35Date: '2025-03-10',
+            cp4Date: '2025-04-10',
+            cp5Date: '2025-06-01'
+          }
         }
       ]
     }
