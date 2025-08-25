@@ -246,6 +246,50 @@ export function drawViz(objectData) {
   }
   panTarget.on('pointerdown', onPanStart).on('pointermove', onPanMove).on('pointerup pointerleave', onPanEnd).on('wheel', onWheel, { passive: false });
 
+  // Keyboard navigation: Left/Right = 1 week; PageUp/PageDown = 1 month
+  const keyboardState = { lastKey: null, lastTime: 0, timer: null };
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function nudgeWeeks(direction, multiplier) {
+    const shiftMs = direction * ONE_WEEK_MS * (multiplier || 1);
+    // Lock to current year briefly for a burst of key presses
+    if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
+    applyPan(shiftMs);
+    // Clear lock after short idle so next burst can re-lock
+    if (keyboardState.timer) clearTimeout(keyboardState.timer);
+    keyboardState.timer = setTimeout(() => { viewState.activeYear = null; }, 350);
+  }
+
+  function nudgeMonths(direction) {
+    if (!viewState.activeYear) viewState.activeYear = viewState.start.getFullYear();
+    const nextStart = d3.timeMonth.offset(viewState.start, direction);
+    const widthMs = +viewState.end - +viewState.start;
+    const [cs, ce] = clampToYear(nextStart, new Date(+nextStart + widthMs), viewState.activeYear);
+    applyDomain(cs, ce);
+    if (keyboardState.timer) clearTimeout(keyboardState.timer);
+    keyboardState.timer = setTimeout(() => { viewState.activeYear = null; }, 350);
+  }
+
+  function onKeyDown(ev) {
+    const key = ev.key;
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'PageUp' && key !== 'PageDown') return;
+    ev.preventDefault();
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const isRepeat = (keyboardState.lastKey === key) && (now - keyboardState.lastTime < 300);
+    keyboardState.lastKey = key; keyboardState.lastTime = now;
+    const accel = isRepeat ? 3 : 1; // accelerate on quick double-press
+    if (key === 'ArrowLeft') return nudgeWeeks(-1, accel);
+    if (key === 'ArrowRight') return nudgeWeeks(1, accel);
+    if (key === 'PageUp') return nudgeMonths(-1);
+    if (key === 'PageDown') return nudgeMonths(1);
+  }
+
+  if (typeof window !== 'undefined') {
+    if (window.__cpGanttKeyHandler) window.removeEventListener('keydown', window.__cpGanttKeyHandler);
+    window.__cpGanttKeyHandler = onKeyDown;
+    window.addEventListener('keydown', window.__cpGanttKeyHandler);
+  }
+
   function updateTodayLine() {
     if (!todayLine) return;
     // Keep today anchored to the active domain year when outside
