@@ -112,7 +112,8 @@ export function drawViz(objectData) {
   let yCursor = 0;
   const cardsG = g.append('g');
   Array.from(teamGroups.entries()).forEach(([team, trs]) => {
-    g.append('text').attr('x', -16).attr('y', yCursor + 16).attr('text-anchor', 'end').attr('fill', '#9aa4b2').text(team);
+    // Move the right-anchored team code a bit left so it doesn't hug the card border
+    g.append('text').attr('x', -32).attr('y', yCursor + 16).attr('text-anchor', 'end').attr('fill', '#9aa4b2').text(team);
     trs.forEach((r) => {
       const yTop = yCursor + (rowHeight - barHeight) / 2;
       rowPositions.set(r.key, yCursor);
@@ -412,7 +413,7 @@ export function drawViz(objectData) {
       const next = monthStarts[idx + 1];
       const x1 = next ? x(next) : x(viewState.end);
       const cx = (x0 + x1) / 2;
-      monthsG.append('text').attr('x', cx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'week-label').text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
+      monthsG.append('text').attr('x', cx).attr('y', 0).attr('text-anchor', 'middle').attr('class', 'month-label').text(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(m).toUpperCase());
     });
 
     // Weeks row
